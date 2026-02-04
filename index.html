@@ -2,10 +2,137 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>Test</title>
+  <title>Tesla 超級充電站快速查詢</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 22px;
+    }
+    select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    .card {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      line-height: 1.8;
+    }
+    .label {
+      color: #666;
+    }
+  </style>
 </head>
 <body>
-  <h1>GitHub Pages 顯示正常</h1>
-  <p>如果你看到這行，代表 HTML 沒問題</p>
+
+<h1>🔌 Tesla 超級充電站快速查詢</h1>
+
+<label class="label">縣市</label>
+<select id="citySelect">
+  <option value="">請選擇縣市</option>
+</select>
+
+<label class="label">充電站</label>
+<select id="stationSelect" disabled>
+  <option value="">請先選擇縣市</option>
+</select>
+
+<div id="info" class="card" style="display:none;"></div>
+
+<script>
+const stations = [
+  {
+    city: "台北市",
+    name: "台北－特斯拉台北體驗中心",
+    openTime: "24H",
+    parkingFee: "依停車場規定",
+    gracePeriod: "",
+    stalls: { V3: 8, V2: 0, TPC: 4, CCS2: 4 }
+  },
+  {
+    city: "新北市",
+    name: "新北－新莊宏匯廣場",
+    openTime: "24H",
+    parkingFee: "$40/小時",
+    gracePeriod: "",
+    stalls: { V3: 6, V2: 0, TPC: 3, CCS2: 3 }
+  }
+];
+
+// 取得縣市清單
+const cities = [...new Set(stations.map(s => s.city))];
+
+const citySelect = document.getElementById("citySelect");
+const stationSelect = document.getElementById("stationSelect");
+const info = document.getElementById("info");
+
+// 填入縣市選單
+cities.forEach(city => {
+  const opt = document.createElement("option");
+  opt.value = city;
+  opt.textContent = city;
+  citySelect.appendChild(opt);
+});
+
+// 選縣市
+citySelect.addEventListener("change", () => {
+  stationSelect.innerHTML = "";
+  info.style.display = "none";
+
+  const city = citySelect.value;
+  if (!city) {
+    stationSelect.disabled = true;
+    stationSelect.innerHTML = "<option>請先選擇縣市</option>";
+    return;
+  }
+
+  stationSelect.disabled = false;
+  stationSelect.innerHTML = "<option value=''>請選擇充電站</option>";
+
+  stations
+    .filter(s => s.city === city)
+    .forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s.name;
+      opt.textContent = s.name;
+      stationSelect.appendChild(opt);
+    });
+});
+
+// 選充電站
+stationSelect.addEventListener("change", () => {
+  const station = stations.find(
+    s => s.name === stationSelect.value
+  );
+
+  if (!station) {
+    info.style.display = "none";
+    return;
+  }
+
+  info.style.display = "block";
+  info.innerHTML = `
+    <strong>${station.name}</strong><br>
+    <span class="label">營業時間：</span>${station.openTime}<br>
+    <span class="label">停車收費：</span>${station.parkingFee}<br>
+    <span class="label">停車收費緩衝時間：</span>
+      ${station.gracePeriod || "（待補資料）"}<br><br>
+
+    <strong>充電槍配置</strong><br>
+    V3：${station.stalls.V3} 槍<br>
+    V2：${station.stalls.V2} 槍<br>
+    TPC：${station.stalls.TPC} 槍<br>
+    CCS2：${station.stalls.CCS2} 槍
+  `;
+});
+</script>
+
 </body>
 </html>
