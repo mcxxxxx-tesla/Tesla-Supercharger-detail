@@ -1,135 +1,106 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <title>Tesla 超級充電站快速查詢</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
-    }
-    h1 {
-      font-size: 22px;
-    }
-    select {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      font-size: 16px;
-    }
-    .card {
-      background: #fff;
-      padding: 15px;
-      border-radius: 8px;
-      margin-top: 15px;
-      line-height: 1.8;
-    }
-    .label {
-      color: #666;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Tesla 超級充電站停車資訊查詢</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f2f2f2;
+  padding: 16px;
+}
+h1 {
+  font-size: 22px;
+}
+select {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 16px;
+}
+.card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 10px;
+  line-height: 1.8;
+}
+.label {
+  color: #666;
+}
+.note {
+  color: #b00020;
+  font-size: 14px;
+}
+</style>
 </head>
+
 <body>
 
-<h1>🔌 Tesla 超級充電站快速查詢</h1>
+<h1>🔌 Tesla 超級充電站停車資訊</h1>
 
-<label class="label">縣市</label>
-<select id="citySelect">
-  <option value="">請選擇縣市</option>
-</select>
-
-<label class="label">充電站</label>
-<select id="stationSelect" disabled>
-  <option value="">請先選擇縣市</option>
+<select id="stationSelect">
+  <option value="">請選擇充電站</option>
 </select>
 
 <div id="info" class="card" style="display:none;"></div>
 
 <script>
 const stations = [
-  {
-    city: "台北市",
-    name: "台北－特斯拉台北體驗中心",
-    openTime: "24H",
-    parkingFee: "依停車場規定",
-    gracePeriod: "",
-    stalls: { V3: 8, V2: 0, TPC: 4, CCS2: 4 }
-  },
-  {
-    city: "新北市",
-    name: "新北－新莊宏匯廣場",
-    openTime: "24H",
-    parkingFee: "$40/小時",
-    gracePeriod: "",
-    stalls: { V3: 6, V2: 0, TPC: 3, CCS2: 3 }
-  }
+  { name:"大直忠泰", grace:"14+29", note:"" },
+  { name:"台大體育館", grace:"29+14", note:"" },
+  { name:"臺大", grace:"29+14", note:"" },
+  { name:"信義宏匯", grace:"14+14", note:"" },
+  { name:"桃園台茂", grace:"29+29", note:"" },
+
+  { name:"三重愛買", grace:"條件式",
+    note:"有消費：59+29；無消費：29+9（另有版本 29+10）" },
+
+  { name:"桂林家樂福", grace:"29+15", note:"原 29+29，已調整" },
+  { name:"青埔環球", grace:"30+15", note:"" },
+  { name:"麗水街政大", grace:"無緩衝", note:"入場即計費" },
+  { name:"仁愛富邦", grace:"14+14", note:"廁所在 B2、B4" },
+  { name:"北投雅樂軒", grace:"14+14", note:"停車費 40 元 / 1 小時" },
+  { name:"林口喜來登", grace:"14+14", note:"" },
+  { name:"台中李方艾美", grace:"14+14", note:"" },
+  { name:"水湳愛買", grace:"29+29", note:"" },
+  { name:"基隆微笑台北", grace:"9+9", note:"超級充電站" },
+
+  { name:"新竹芎林下交流道", grace:"9+9",
+    note:"實際僅 3–5 分鐘；需線上操作，繳費機無法設定。https://parking.sonice-aioe.com/751431" }
 ];
 
-// 取得縣市清單
-const cities = [...new Set(stations.map(s => s.city))];
-
-const citySelect = document.getElementById("citySelect");
-const stationSelect = document.getElementById("stationSelect");
+const select = document.getElementById("stationSelect");
 const info = document.getElementById("info");
 
-// 填入縣市選單
-cities.forEach(city => {
+stations.forEach((s, i) => {
   const opt = document.createElement("option");
-  opt.value = city;
-  opt.textContent = city;
-  citySelect.appendChild(opt);
+  opt.value = i;
+  opt.textContent = s.name;
+  select.appendChild(opt);
 });
 
-// 選縣市
-citySelect.addEventListener("change", () => {
-  stationSelect.innerHTML = "";
-  info.style.display = "none";
-
-  const city = citySelect.value;
-  if (!city) {
-    stationSelect.disabled = true;
-    stationSelect.innerHTML = "<option>請先選擇縣市</option>";
-    return;
+function graceText(code) {
+  if (code === "無緩衝") return "入場即計費，繳費後無寬限";
+  if (code === "條件式") return "依消費條件不同（請見下方說明）";
+  const p = code.split("+");
+  if (p.length === 2) {
+    return `入場 ${p[0]} 分鐘內免費，繳費後 ${p[1]} 分鐘內離場`;
   }
+  return code;
+}
 
-  stationSelect.disabled = false;
-  stationSelect.innerHTML = "<option value=''>請選擇充電站</option>";
-
-  stations
-    .filter(s => s.city === city)
-    .forEach(s => {
-      const opt = document.createElement("option");
-      opt.value = s.name;
-      opt.textContent = s.name;
-      stationSelect.appendChild(opt);
-    });
-});
-
-// 選充電站
-stationSelect.addEventListener("change", () => {
-  const station = stations.find(
-    s => s.name === stationSelect.value
-  );
-
-  if (!station) {
+select.addEventListener("change", () => {
+  if (select.value === "") {
     info.style.display = "none";
     return;
   }
-
+  const s = stations[select.value];
   info.style.display = "block";
   info.innerHTML = `
-    <strong>${station.name}</strong><br>
-    <span class="label">營業時間：</span>${station.openTime}<br>
-    <span class="label">停車收費：</span>${station.parkingFee}<br>
-    <span class="label">停車收費緩衝時間：</span>
-      ${station.gracePeriod || "（待補資料）"}<br><br>
-
-    <strong>充電槍配置</strong><br>
-    V3：${station.stalls.V3} 槍<br>
-    V2：${station.stalls.V2} 槍<br>
-    TPC：${station.stalls.TPC} 槍<br>
-    CCS2：${station.stalls.CCS2} 槍
+    <strong>${s.name}</strong><br>
+    <span class="label">停車緩衝時間：</span>${graceText(s.grace)}<br>
+    ${s.note ? `<div class="note">備註：${s.note}</div>` : ""}
   `;
 });
 </script>
